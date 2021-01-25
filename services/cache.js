@@ -16,17 +16,21 @@ mongoose.Query.prototype.exec = async function () {
     console.log(this.getQuery());
 
     console.log(this.mongooseCollection.name);
-   const key= JSON.stringify(Object.assign({}, this.getQuery, {
+    const key = JSON.stringify(Object.assign({}, this.getQuery, {
         collection: this.mongooseCollection.name
     }));
 
-    const cacheValue= await client.get(key);
+    const cacheValue = await client.get(key);
 
-    if(cacheValue){
-        console.log(cacheValue);
+    if (cacheValue) {
+        const doc = new this.model(JSON.parse(cacheValue));
+        return Array.isArray(doc)
+            ? doc.map(d => new this.model(d))
+            : new this.model(doc);
     }
 
-    const result= await exec.apply(this, arguments);
-    console.log('done',result);
-
+    const result = await exec.apply(this, arguments);
+    console.log('done', result);
+    client.set(key, JSON.stringify(result));
+    return result;
 }
